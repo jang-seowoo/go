@@ -1,21 +1,40 @@
+
 'use client'
 
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 import {firestore} from "./firebase/firestore";
+import React, { useEffect, useState } from 'react';
+import firebase from "firebase/compat/app";
 
-export default function Home() {
 
-  const onClickUpLoadButton = async () => {
-    await addDoc(collection(firestore, "users"),
-      {
-        first: "Ada",
-        last: "Lovelace",
-        born: 1815
-      })
+ export default function Home() {
+
+  const [value, setValue] = useState("");
+  
+  const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(event.target.value);               
+    console.log(value);
+  }             
+
+    const send = async ()=> {
+    await addDoc(collection(firestore, "user"), {
+      value: value
+
+
+
+
+    })          
+      setValue("");
   }
 
   return (
     <div>
-      <button onClick={onClickUpLoadButton}>Ada Lovelace 등록</button>
+      
+      <input placeholder="text" type="text" value={value} onChange={onChange}/>
+      <button onClick={send}>Send</button>
+             
+
     </div>
-  )}
+  )
+
+}
