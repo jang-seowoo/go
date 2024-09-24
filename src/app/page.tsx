@@ -1,9 +1,9 @@
 
 'use client'
 
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc} from "firebase/firestore";
 import {firestore} from "./firebase/firestore";
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 
 
