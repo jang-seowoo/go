@@ -1,10 +1,7 @@
 'use client'
 
-{/* import { collection, addDoc} from "firebase/firestore";
-import {firestore} from "./firebase/firestore";*/}
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import "./globals.css";
-
 
 export default function Home() {
   const [selectedSchool, setSelectedSchool] = useState('');
@@ -58,8 +55,8 @@ export default function Home() {
     '기타'
   ];
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // 기본 폼 제출 방지
     if (selectedSchool && selectedReason) {
       alert(`선택한 학교: ${selectedSchool}, 선택 이유: ${selectedReason}`);
     } else {
@@ -70,7 +67,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-between p-10">
       {/* 메인 콘텐츠 */}
-      <div className="flex flex-col items-center justify-center flex-grow">
+      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center flex-grow"> {/* form 사용 */}
         <div className="bg-white shadow-md rounded-2xl p-10 w-full max-w-5xl">
           <h1 className="text-4xl font-bold text-center text-gray-700 mb-4">
             광명시 희망 고등학교
@@ -86,6 +83,7 @@ export default function Home() {
               {schoolsList.map((school, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={() => setSelectedSchool(schools[index])}
                   className={`px-8 py-4 text-lg rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
                     selectedSchool === schools[index]
@@ -106,6 +104,7 @@ export default function Home() {
               {reasonsList.map((reason, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={() => setSelectedReason(reasons[index])}
                   className={`px-8 py-4 text-lg rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
                     selectedReason === reasons[index]
@@ -122,14 +121,14 @@ export default function Home() {
           {/*제출*/}
           <div className="text-center">
             <button
-              onClick={handleSubmit}
+              type="submit" /* submit으로 변경 */
               className="w-full bg-gray-800 text-white py-4 rounded-lg text-xl font-bold shadow-lg hover:bg-gray-900 transition-transform duration-200 hover:scale-105"
             >
               완료
             </button>
           </div>
         </div>
-      </div>
+      </form>
 
       {/* 하단 크레딧 및 안내 섹션 */}
       <div className="bg-gray-100 p-6 rounded-lg shadow-md mt-10 w-full max-w-5xl mx-auto">
