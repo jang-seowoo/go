@@ -1,4 +1,4 @@
-// firebase/firestore.js
+
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
@@ -20,4 +20,4 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // db 내보내기
-export { db }; // ES6 모듈 방식으로 내보내기
+export { db }; 

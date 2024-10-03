@@ -1,14 +1,21 @@
 'use client'
 
+
 import {doc, updateDoc, increment} from 'firebase/firestore';
 import {db} from './firebase/firestore'
 
-import React, { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useState, FormEvent, useEffect } from 'react';
 import "./globals.css";
 
 export default function Home() {
+  
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedReason, setSelectedReason] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const router = useRouter();
+
+  
 
   const schoolsList = [
     '광명고등학교',
@@ -58,6 +65,14 @@ export default function Home() {
     '기타'
   ];
 
+
+  /*useEffect(()=>{
+    if (localStorage.getItem('voted')){
+      router.push('/result');
+    }
+  }, []);*/
+
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // 기본 폼 제출 방지
     if (selectedSchool && selectedReason) {
@@ -73,6 +88,13 @@ export default function Home() {
         await updateDoc(reasonDocRef, {
           [selectedSchool]: increment(1),
         });
+
+        setIsSubmitted(true);
+        
+        setTimeout(()=> {
+          router.push('/result');
+        }, 2000)
+        
       } catch (error){
           console.error('firebase 업데이트중 에러 발생 : ', error)
       }
@@ -81,7 +103,24 @@ export default function Home() {
     }
   };
  
- 
+  if (isSubmitted) {
+    localStorage.setItem('voted', 'true');
+    // 제출 후 완료 메시지와 선택 내용 표시
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white p-10 rounded-lg shadow-md text-center">
+          <h1 className="text-4xl font-bold mb-4">설문이 완료되었습니다!</h1>
+          <p className="text-xl mb-6">
+            선택한 학교: <strong>{schoolsList[schools.indexOf(selectedSchool)]}</strong>
+          </p>
+          <p className="text-xl mb-6">
+            선택 이유: <strong>{reasonsList[reasons.indexOf(selectedReason)]}</strong>
+          </p>
+          <p className="text-gray-500">잠시 후 결과 페이지로 이동합니다...</p>
+        </div>
+      </div>
+    );
+  }
 
 
   return (
