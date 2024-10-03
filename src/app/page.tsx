@@ -66,11 +66,12 @@ export default function Home() {
   ];
 
 
-  /*useEffect(()=>{
+  useEffect(()=>{
     if (localStorage.getItem('voted')){
-      router.push('/result');
+      console.log('이미투표');
+      //router.push('/result');
     }
-  }, []);*/
+  }, []);
 
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
