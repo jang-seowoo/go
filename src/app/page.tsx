@@ -1,5 +1,8 @@
 'use client'
 
+import {doc, updateDoc, increment} from 'firebase/firestore';
+import {db} from './firebase/firestore'
+
 import React, { useState, FormEvent } from 'react';
 import "./globals.css";
 
@@ -23,7 +26,7 @@ export default function Home() {
 
   const schools = [
     'gwangmyeong',
-    'gwangmyeongbug',
+    'gwangmyeongbuk',
     'gwangmun',
     'gwanghwi',
     'myeongmun',
@@ -31,7 +34,7 @@ export default function Home() {
     'unsan',
     'jinsung',
     'chunghyeon',
-    'hang-gong',
+    'hanggong',
     'chang'
   ];
 
@@ -55,14 +58,31 @@ export default function Home() {
     '기타'
   ];
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // 기본 폼 제출 방지
     if (selectedSchool && selectedReason) {
-      alert(`선택한 학교: ${selectedSchool}, 선택 이유: ${selectedReason}`);
+      try {
+        //all 문서에 +1
+        const allDocRef = doc(db, "data", "all");
+        await updateDoc(allDocRef, {
+          [selectedSchool]: increment(1),
+        });
+
+        //선택한 이유 문서에 +1
+        const reasonDocRef = doc(db, "data", selectedReason);
+        await updateDoc(reasonDocRef, {
+          [selectedSchool]: increment(1),
+        });
+      } catch (error){
+          console.error('firebase 업데이트중 에러 발생 : ', error)
+      }
     } else {
       alert('학교와 선택 이유를 모두 선택해주세요.');
     }
   };
+ 
+ 
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-between p-10">
