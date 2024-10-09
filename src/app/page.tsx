@@ -190,7 +190,6 @@ export default function Home() {
         </div>
       </form>
 
-      {/* 하단 크레딧 및 안내 섹션 */}
       <div className="bg-gray-100 p-6 rounded-lg shadow-md mt-10 w-full max-w-5xl mx-auto">
         <p className="text-gray-600 text-center mb-4">
           모든 설문 응답은 익명으로 처리됩니다. 감사합니다 &gt;&lt;
@@ -198,7 +197,7 @@ export default function Home() {
         <p className="text-gray-500 text-center text-sm">
           문의 및 제안: insta@[wxstw_] 기타를 고른 경우 어떤 이유인지 알려주세요 | 이 웹사이트는 개인 프로젝트로 제작되었으며, 모든 내용과 데이터는 비상업적 목적으로 사용됩니다.
         </p>
-      </div>
+      </div> 
     </div>
   );
 }
