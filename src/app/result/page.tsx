@@ -255,7 +255,7 @@ export default function ResultPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {sortedSchools.map((school, index) => (
+                  {sortedSchools.map((school) => (
                     <tr key={school}>
                       
                       <td className="px-4 py-2 whitespace-nowrap">{schoolsList[schools.indexOf(school)]}</td>
