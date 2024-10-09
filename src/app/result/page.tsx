@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useEffect, useState, useCallback } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/firestore';
@@ -18,10 +19,80 @@ type SchoolDescriptions = {
   [key: string]: string;
 };
 
+type NamuLink = {
+  [key: string]: string;
+};
+
+
+const schoolLocations = {
+  gwangmyeong: { lat: 37.47857117, lng: 126.8659896 },
+  gwangmyeongbuk: { lat: 37.487906, lng: 126.8679386 },
+  gwangmun: { lat: 37.46462137, lng: 126.8495912 },
+  gwanghwi: { lat: 37.4290157, lng: 126.8818263 },
+  myeongmun: { lat: 37.47057166, lng: 126.8498885 },
+  soha: { lat: 37.44724606, lng: 126.8875821 },
+  unsan: { lat: 37.45431392, lng: 126.8833501 },
+  jinsung: { lat: 37.46950279, lng: 126.8767614},
+  chunghyeon: { lat: 37.43295996, lng: 126.8845281 },
+  hanggong: { lat: 37.47331347, lng: 126.8570351 },
+  chang: { lat: 37.4383574, lng: 126.8821568 }
+};
+
+// 거리 계산 함수
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+const R = 6371; // 지구의 반경 (km)
+const dLat = (lat2 - lat1) * Math.PI / 180;
+const dLon = (lon2 - lon1) * Math.PI / 180;
+const a = 
+  Math.sin(dLat/2) * Math.sin(dLat/2) +
+  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+  Math.sin(dLon/2) * Math.sin(dLon/2);
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+return R * c;
+}
+
 export default function ResultPage() {
   const [selectedReason, setSelectedReason] = useState<string>('all');
   const [schoolData, setSchoolData] = useState<SchoolData>({});
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null); // 선택한 학교
+
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [distances, setDistances] = useState<{[key: string]: number}>({});
+
+   // 사용자 위치 가져오기
+   useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+    }
+  }, []);
+
+  // 거리 계산
+  useEffect(() => {
+    if (userLocation) {
+      const newDistances: {[key: string]: number} = {};
+      Object.entries(schoolLocations).forEach(([school, location]) => {
+        newDistances[school] = calculateDistance(
+          userLocation.lat,
+          userLocation.lng,
+          location.lat,
+          location.lng
+        );
+      });
+      setDistances(newDistances);
+    }
+  }, [userLocation]);
 
 
   const schoolsList: string[] = [
@@ -59,6 +130,23 @@ export default function ResultPage() {
     hanggong: "경기도 광명시 광명7동에 위치한 사립 특성화 고등학교로 2017년 산학일체형 도제학교로 지정되었다. 2020년부터 교명이 경기항공고등학교로 변경되었다. 학과: 항공전기전자과, 항공영상미디어과, 로봇자동화과, 인테리어리모델링과",
     chang: "경기도 광명시 소하2동에 위치한 공립 특성화고등학교이다. 스마트회계, 스마트it, 인플루언서 마케팅, 스포츠 경영, 관광경영, 콘텐츠디자인 과로 나뉜다"
   };
+
+  const namuLink: NamuLink = {
+    gwangmyeong: "https://namu.wiki/w/%EA%B4%91%EB%AA%85%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90(%EA%B2%BD%EA%B8%B0)",
+    gwangmyeongbuk: "https://namu.wiki/w/%EA%B4%91%EB%AA%85%EB%B6%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90",
+    gwangmun: "https://namu.wiki/w/%EA%B4%91%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90",
+    gwanghwi: "https://namu.wiki/w/%EA%B4%91%ED%9C%98%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90",
+    myeongmun: 'https://namu.wiki/w/%EB%AA%85%EB%AC%B8%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+    soha: 'https://namu.wiki/w/%EC%86%8C%ED%95%98%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+    unsan: 'https://namu.wiki/w/%EC%9A%B4%EC%82%B0%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+    jinsung: 'https://namu.wiki/w/%EC%A7%84%EC%84%B1%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+    chunghyeon: 'https://namu.wiki/w/%EC%B6%A9%ED%98%84%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+    hanggong: 'https://namu.wiki/w/%EA%B2%BD%EA%B8%B0%ED%95%AD%EA%B3%B5%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+    chang: 'https://namu.wiki/w/%EC%B0%BD%EC%9D%98%EA%B2%BD%EC%98%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90',
+  }
+
+
+
 
   const fetchData = useCallback(async (): Promise<void> => {
     try {
@@ -126,9 +214,11 @@ export default function ResultPage() {
   const handleCloseModal = () => setSelectedSchool(null);
 
   return (
+
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="bg-white shadow-md rounded-xl p-4 md:p-8 w-full max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-700 mb-6">투표 결과</h1>
+
+        <h1 className="text-3xl font-bold text-center text-gray-700 mb-6">광명시 희망 고등학교</h1>
 
         <div className="flex flex-col md:flex-row gap-6">
           {/* 필터 선택 */}
@@ -157,18 +247,22 @@ export default function ResultPage() {
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결과</th>
+                    
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">수</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">거리 (km)</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상세보기</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {sortedSchools.map((school, index) => (
                     <tr key={school}>
-                      <td className="px-4 py-2 whitespace-nowrap">{index + 1}</td>
+                      
                       <td className="px-4 py-2 whitespace-nowrap">{schoolsList[schools.indexOf(school)]}</td>
                       <td className="px-4 py-2 whitespace-nowrap">{schoolData[school] || 0}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                {distances[school] ? distances[school].toFixed(2) : '계산 중...'}
+              </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <span
                           onClick={() => setSelectedSchool(school)}
@@ -201,25 +295,37 @@ export default function ResultPage() {
       {selectedSchool && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 w-11/12 md:w-2/3 lg:w-1/2 shadow-lg">
-            <h2 className="text-xl font-bold mb-4">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
+            <h2 className="text-2xl font-bold mb-4">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
             <Image
               src={`/image/${selectedSchool}.png`}
               alt={`${schoolsList[schools.indexOf(selectedSchool)]} 사진`}
               width={600}
               height={500}
-              className="w-64 h-48 object-cover mb-4"
+              className="w-full h-48 object-cover mb-4 rounded"
             />
-            <h3 className="text-lg font-semibold mb-2">상세보기</h3>
-            <p>{schoolDescriptions[selectedSchool]}</p>
+      
+            <p className="text-sm mb-4">{schoolDescriptions[selectedSchool]}</p>
+      
+            <h3 className="text-sm text-blue-800 mb-3">
+              정보는 모두 나무위키에서 가져왔으며, 수정할 부분이나 학교 관계자 중 불편한 내용이 있을 시 인스타그램 @wxstw_ 으로 문의주세요.
+            </h3>
+      
+            <div className="mb-4"> {/* 여기를 추가하여 더보기 링크와 닫기 버튼 간의 간격을 조정 */}
+              <Link href={namuLink[selectedSchool]} passHref className="text-blue-500 text-sm hover:underline transition duration-200">
+                더보기 (나무위키 이동)
+              </Link>
+            </div>
+
             <button
               onClick={handleCloseModal}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+              className="mt-2 bg-red-500 text-white px-4 py-2 rounded transition duration-200 hover:bg-red-600"
             >
               닫기
             </button>
           </div>
         </div>
       )}
+
     </div>
   );
 }
