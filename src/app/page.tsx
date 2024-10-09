@@ -1,90 +1,54 @@
 'use client'
 
-
 import {doc, updateDoc, increment} from 'firebase/firestore';
 import {db} from './firebase/firestore'
-
 import { useRouter } from 'next/navigation';
 import React, { useState, FormEvent, useEffect } from 'react';
 import "./globals.css";
 
 export default function Home() {
-  
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedReason, setSelectedReason] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const router = useRouter();
 
-  
-
   const schoolsList = [
-    '광명고등학교',
-    '광명북고등학교',
-    '광문고등학교',
-    '광휘고등학교',
-    '명문고등학교',
-    '소하고등학교',
-    '운산고등학교',
-    '진성고등학교',
-    '충현고등학교',
-    '경기항공고등학교',
-    '창의경영고등학교'
+    '광명고등학교', '광명북고등학교', '광문고등학교', '광휘고등학교',
+    '명문고등학교', '소하고등학교', '운산고등학교', '진성고등학교',
+    '충현고등학교', '경기항공고등학교', '창의경영고등학교'
   ];
 
   const schools = [
-    'gwangmyeong',
-    'gwangmyeongbuk',
-    'gwangmun',
-    'gwanghwi',
-    'myeongmun',
-    'soha',
-    'unsan',
-    'jinsung',
-    'chunghyeon',
-    'hanggong',
-    'chang'
+    'gwangmyeong', 'gwangmyeongbuk', 'gwangmun', 'gwanghwi',
+    'myeongmun', 'soha', 'unsan', 'jinsung',
+    'chunghyeon', 'hanggong', 'chang'
   ];
 
   const reasons = [
-    'traffic',
-    'academic',
-    'grade',
-    'facility',
-    'employment',
-    'document',
-    'others'
+    'traffic', 'academic', 'grade', 'facility',
+    'employment', 'document', 'others'
   ];
 
   const reasonsList = [
-    '🚌 교통 및 거리',
-    '🕹️ 학업 분위기',
-    '💡 내신 전략',
-    '🏫 시설',
-    '🏢 취업',
-    '📜 생기부 관리',
-    '기타'
+    '🚌 교통 및 거리', '🕹️ 학업 분위기', '💡 내신 전략', '🏫 시설',
+    '🏢 취업', '📜 생기부 관리', '기타'
   ];
 
-
-  useEffect(()=>{
-    if (localStorage.getItem('voted')){
+  useEffect(() => {
+    if (localStorage.getItem('voted')) {
       console.log('이미투표');
-      //router.push('/result');
     }
   }, []);
 
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // 기본 폼 제출 방지
+    e.preventDefault();
     if (selectedSchool && selectedReason) {
       try {
-        //all 문서에 +1
         const allDocRef = doc(db, "data", "all");
         await updateDoc(allDocRef, {
           [selectedSchool]: increment(1),
         });
 
-        //선택한 이유 문서에 +1
         const reasonDocRef = doc(db, "data", selectedReason);
         await updateDoc(reasonDocRef, {
           [selectedSchool]: increment(1),
@@ -92,12 +56,12 @@ export default function Home() {
 
         setIsSubmitted(true);
         
-        setTimeout(()=> {
+        setTimeout(() => {
           router.push('/result');
-        }, 2000)
+        }, 2000);
         
-      } catch (error){
-          console.error('firebase 업데이트중 에러 발생 : ', error)
+      } catch (error) {
+        console.error('firebase 업데이트중 에러 발생 : ', error);
       }
     } else {
       alert('학교와 선택 이유를 모두 선택해주세요.');
@@ -106,15 +70,14 @@ export default function Home() {
  
   if (isSubmitted) {
     localStorage.setItem('voted', 'true');
-    // 제출 후 완료 메시지와 선택 내용 표시
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-white p-10 rounded-lg shadow-md text-center">
-          <h1 className="text-4xl font-bold mb-4">설문이 완료되었습니다!</h1>
-          <p className="text-xl mb-6">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="bg-white p-6 md:p-10 rounded-lg shadow-md text-center w-full max-w-md">
+          <h1 className="text-2xl md:text-4xl font-bold mb-4">설문이 완료되었습니다!</h1>
+          <p className="text-lg md:text-xl mb-4">
             선택한 학교: <strong>{schoolsList[schools.indexOf(selectedSchool)]}</strong>
           </p>
-          <p className="text-xl mb-6">
+          <p className="text-lg md:text-xl mb-4">
             선택 이유: <strong>{reasonsList[reasons.indexOf(selectedReason)]}</strong>
           </p>
           <p className="text-gray-500">잠시 후 결과 페이지로 이동합니다...</p>
@@ -123,29 +86,26 @@ export default function Home() {
     );
   }
 
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-between p-10">
-      {/* 메인 콘텐츠 */}
-      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center flex-grow"> {/* form 사용 */}
-        <div className="bg-white shadow-md rounded-2xl p-10 w-full max-w-5xl">
-          <h1 className="text-4xl font-bold text-center text-gray-700 mb-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-between p-4 md:p-10">
+      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center flex-grow w-full max-w-4xl mx-auto">
+        <div className="bg-white shadow-md rounded-2xl p-6 md:p-10 w-full">
+          <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-700 mb-4">
             광명시 희망 고등학교
           </h1>
-          <p className="text-center text-gray-500 text-sm mb-10">
+          <p className="text-center text-gray-500 text-sm mb-8">
             단순히 고입을 준비하는 우리에게 도움이 되기 위해서 웹을 만들었습니다. 특정 고등학교를 무시하거나 서열을 가리기 위한 목적이 아닙니다. 또한 사용자에게서 직접적으로 가져가는 데이터는 없고, 설문 조사 후 다른 사람들의 선택을 볼 수 있습니다. 
           </p>
 
-          {/* 학교 선택*/}
-          <div className="mb-16">
-            <h2 className="text-2xl font-medium text-gray-800 mb-6">1. 고등학교 선택</h2>
-            <div className="flex flex-wrap justify-center gap-6">
+          <div className="mb-8 md:mb-12">
+            <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-4">1. 고등학교 선택</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {schoolsList.map((school, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => setSelectedSchool(schools[index])}
-                  className={`px-8 py-4 text-lg rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
+                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
                     selectedSchool === schools[index]
                       ? 'bg-blue-500 text-white border-2 border-blue-500'
                       : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
@@ -157,16 +117,15 @@ export default function Home() {
             </div>
           </div>
 
-          {/*이유 선택*/}
-          <div className="mb-16">
-            <h2 className="text-2xl font-medium text-gray-800 mb-6">2. 선택 이유는 뭔가요?</h2>
-            <div className="flex flex-wrap justify-center gap-6">
+          <div className="mb-8 md:mb-12">
+            <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-4">2. 선택 이유는 뭔가요?</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {reasonsList.map((reason, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => setSelectedReason(reasons[index])}
-                  className={`px-8 py-4 text-lg rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
+                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
                     selectedReason === reasons[index]
                       ? 'bg-green-500 text-white border-2 border-green-500'
                       : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
@@ -178,11 +137,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/*제출*/}
           <div className="text-center">
             <button
-              type="submit" /* submit으로 변경 */
-              className="w-full bg-gray-800 text-white py-4 rounded-lg text-xl font-bold shadow-lg hover:bg-gray-900 transition-transform duration-200 hover:scale-105"
+              type="submit"
+              className="w-full bg-gray-800 text-white py-3 md:py-4 rounded-lg text-lg md:text-xl font-bold shadow-lg hover:bg-gray-900 transition-transform duration-200 hover:scale-105"
             >
               완료
             </button>
@@ -190,11 +148,11 @@ export default function Home() {
         </div>
       </form>
 
-      <div className="bg-gray-100 p-6 rounded-lg shadow-md mt-10 w-full max-w-5xl mx-auto">
-        <p className="text-gray-600 text-center mb-4">
+      <div className="bg-gray-100 p-4 md:p-6 rounded-lg shadow-md mt-8 w-full max-w-4xl mx-auto">
+        <p className="text-gray-600 text-center mb-2 text-sm md:text-base">
           모든 설문 응답은 익명으로 처리됩니다. 감사합니다 &gt;&lt;
         </p>
-        <p className="text-gray-500 text-center text-sm">
+        <p className="text-gray-500 text-center text-xs md:text-sm">
           문의 및 제안: insta@[wxstw_] 기타를 고른 경우 어떤 이유인지 알려주세요 | 이 웹사이트는 개인 프로젝트로 제작되었으며, 모든 내용과 데이터는 비상업적 목적으로 사용됩니다.
         </p>
       </div> 
