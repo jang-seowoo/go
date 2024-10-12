@@ -6,33 +6,15 @@ import { useRouter } from 'next/navigation';
 import React, { useState, FormEvent, useEffect } from 'react';
 import "./globals.css";
 
+import { schoolsList, schools, reasons, reasonsList } from './data/schoolData';
+
 export default function Home() {
   const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedReason, setSelectedReason] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const router = useRouter();
 
-  const schoolsList = [
-    '광명고등학교', '광명북고등학교', '광문고등학교', '광휘고등학교',
-    '명문고등학교', '소하고등학교', '운산고등학교', '진성고등학교',
-    '충현고등학교', '경기항공고등학교', '창의경영고등학교'
-  ];
 
-  const schools = [
-    'gwangmyeong', 'gwangmyeongbuk', 'gwangmun', 'gwanghwi',
-    'myeongmun', 'soha', 'unsan', 'jinsung',
-    'chunghyeon', 'hanggong', 'chang'
-  ];
-
-  const reasons = [
-    'traffic', 'academic', 'grade', 'facility',
-    'employment', 'document', 'others'
-  ];
-
-  const reasonsList = [
-    '🚌 교통 및 거리', '🕹️ 학업 분위기', '💡 내신 전략', '🏫 시설',
-    '🏢 취업', '📜 생기부 관리', '기타'
-  ];
 
   useEffect(() => {
     if (localStorage.getItem('voted')) {
@@ -78,7 +60,7 @@ export default function Home() {
             선택한 학교: <strong>{schoolsList[schools.indexOf(selectedSchool)]}</strong>
           </p>
           <p className="text-lg md:text-xl mb-4">
-            선택 이유: <strong>{reasonsList[reasons.indexOf(selectedReason)]}</strong>
+            선택 이유: <strong>{reasonsList[reasons.indexOf(selectedReason)].label}</strong>
           </p>
           <p className="text-gray-500">잠시 후 결과 페이지로 이동합니다...</p>
         </div>
@@ -99,13 +81,13 @@ export default function Home() {
 
           <div className="mb-8 md:mb-12">
             <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-4">1. 고등학교 선택</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {schoolsList.map((school, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => setSelectedSchool(schools[index])}
-                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
+                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 h-auto min-h-[60px] flex items-center justify-center text-center ${
                     selectedSchool === schools[index]
                       ? 'bg-blue-500 text-white border-2 border-blue-500'
                       : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
@@ -119,19 +101,19 @@ export default function Home() {
 
           <div className="mb-8 md:mb-12">
             <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-4">2. 선택 이유는 뭔가요?</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {reasonsList.map((reason, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => setSelectedReason(reasons[index])}
-                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 ${
+                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 h-auto min-h-[60px] flex items-center justify-center text-center ${
                     selectedReason === reasons[index]
                       ? 'bg-green-500 text-white border-2 border-green-500'
                       : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
                   }`}
                 >
-                  {reason}
+                  {reason.label}
                 </button>
               ))}
             </div>
