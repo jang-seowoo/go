@@ -1,6 +1,5 @@
 'use client'
 
-
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { doc, getDoc } from 'firebase/firestore';
@@ -9,10 +8,11 @@ import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import Image from 'next/image';
 import '../globals.css';
+import { Info } from 'lucide-react';
 
 import {
   SchoolCode, ReasonCode,
-  schoolsList, schools,reasonsList,
+  schoolsList, schools, reasonsList,
   schoolDescriptions, namuLink, Location, schoolLocations
 } from '../data/schoolData';
 
@@ -20,9 +20,8 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 type SchoolData = Record<SchoolCode, number>;
 
-// 거리 계산 함수
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // 지구의 반경 (km)
+  const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = 
@@ -40,7 +39,6 @@ export default function ResultPage() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [distances, setDistances] = useState<Record<SchoolCode, number>>({});
 
-  // 사용자 위치 가져오기
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -59,7 +57,6 @@ export default function ResultPage() {
     }
   }, []);
 
-  // 거리 계산
   useEffect(() => {
     if (userLocation) {
       const newDistances: Record<SchoolCode, number> = {};
@@ -146,7 +143,6 @@ export default function ResultPage() {
         <h1 className="text-3xl font-bold text-center text-gray-700 mb-6">광명시 희망 고등학교</h1>
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* 필터 선택 */}
           <div className="md:w-1/4">
             <div className="grid grid-cols-2 gap-2 md:flex md:flex-col">
               {reasonsList.map((reason, index) => (
@@ -165,62 +161,57 @@ export default function ResultPage() {
             </div>
           </div>
 
-          {/* 결과 표시 */}
           <div className="md:w-3/4">
-            {/* 차트 */}
             <div className="mt-8 mb-8" style={{ height: '500px' }}>
               <Bar data={chartData} options={chartOptions} />
             </div>
 
-            {/* 데이터 표 */}
             <div className="overflow-x-auto mb-8">
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">선호도</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상세보기</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {sortedSchools.map((school) => (
                     <tr key={school}>
                       <td className="px-4 py-2 whitespace-nowrap">
-                        {schoolsList[schools.indexOf(school)]}
-                        <span className="ml-2 text-xs text-blue-500">
-                          거리: {distances[school] ? distances[school].toFixed(2) : '계산 중...'}km
-                          <span className="relative group inline-block">
-                            <span className="cursor-help ml-1 text-gray-400">&#9432;</span>
-                            <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 -mt-2 ml-2">
-                              정확하지 않을 수 있습니다
+                        <div className="flex items-center justify-between">
+                          <div>
+                            {schoolsList[schools.indexOf(school)]}
+                            <span className="ml-2 text-xs text-blue-500">
+                              거리: {distances[school] ? distances[school].toFixed(2) : '계산 중...'}km
+                              <span className="relative group inline-block">
+                                <span className="cursor-help ml-1 text-gray-400">&#9432;</span>
+                                <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 -mt-2 ml-2">
+                                  정확하지 않을 수 있습니다
+                                </span>
+                              </span>
                             </span>
-                          </span>
-                        </span>
+                          </div>
+                          <Info
+                            className="text-blue-600 cursor-pointer hover:text-blue-800 transition-colors duration-200"
+                            size={20}
+                            onClick={() => setSelectedSchool(school)}
+                          />
+                        </div>
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">{schoolData[school] || 0}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <span
-                          onClick={() => setSelectedSchool(school)}
-                          className="text-blue-600 hover:underline cursor-pointer transition duration-300 transform hover:scale-105 flex items-center"
-                        >
-                          <i className="fas fa-info-circle mr-2"></i>
-                          학교 정보
-                        </span>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* 설명 문구 */}
             <p className="text-sm text-gray-500 mt-4 text-center">
-              이 결과는 선택된 이유에 따라 집계된 학교 선호도를 나타냅니다. 더 많은 정보는 학교 정보 버튼을 통해 확인하세요.
+              이 결과는 선택된 이유에 따라 집계된 학교 선호도를 나타냅니다. 더 많은 정보는 학교 이름 옆의 정보 아이콘을 클릭하세요.
             </p>
           </div>
         </div>
       </div>
-      {/* 모달 */}
+
       {selectedSchool && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 w-11/12 md:w-2/3 lg:w-1/2 shadow-lg">
