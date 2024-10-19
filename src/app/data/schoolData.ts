@@ -25,7 +25,7 @@ export const schoolsList: SchoolName[] = [
   
   export const reasonsList: { id: ReasonCode | 'all'; label: ReasonLabel }[] = [
     { id: 'all', label: '전체' },
-    { id: 'traffic', label: '🚌 교통 및 거리' },
+    { id: 'traffic', label: '🚌 교통' },
     { id: 'academic', label: '🕹️ 학업 분위기' },
     { id: 'grade', label: '💡 내신 전략' },
     { id: 'facility', label: '🏫 시설' },

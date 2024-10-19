@@ -1,68 +1,62 @@
 'use client'
 
-import {doc, updateDoc, increment} from 'firebase/firestore';
-import {db} from './firebase/firestore'
+import { doc, updateDoc, increment } from 'firebase/firestore';
+import { db } from './firebase/firestore'
 import { useRouter } from 'next/navigation';
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import "./globals.css";
 
-import { schoolsList, schools, reasons, reasonsList } from './data/schoolData';
+import { SchoolCode, ReasonCode, schoolsList, schools, reasons, reasonsList } from './data/schoolData';
 
 export default function Home() {
-  const [selectedSchool, setSelectedSchool] = useState('');
-  const [selectedReason, setSelectedReason] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState<SchoolCode | ''>('');
+  const [selectedReason, setSelectedReason] = useState<ReasonCode | ''>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-
-
 
   useEffect(() => {
     if (localStorage.getItem('voted')) {
-      console.log('이미투표');
+      console.log('이미 투표');
+      //router.push('/result');
     }
-  }, []);
+  }, [router]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (selectedSchool && selectedReason) {
-      try {
-        const allDocRef = doc(db, "data", "all");
-        await updateDoc(allDocRef, {
-          [selectedSchool]: increment(1),
-        });
 
-        const reasonDocRef = doc(db, "data", selectedReason);
-        await updateDoc(reasonDocRef, {
-          [selectedSchool]: increment(1),
-        });
-
-        setIsSubmitted(true);
-        
-        setTimeout(() => {
-          router.push('/result');
-        }, 2000);
-        
-      } catch (error) {
-        console.error('firebase 업데이트중 에러 발생 : ', error);
-      }
-    } else {
+    if (!selectedSchool || !selectedReason) {
       alert('학교와 선택 이유를 모두 선택해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const allDocRef = doc(db, "data", "all");
+      await updateDoc(allDocRef, {
+        [selectedSchool]: increment(1),
+      });
+
+      const reasonDocRef = doc(db, "data", selectedReason);
+      await updateDoc(reasonDocRef, {
+        [selectedSchool]: increment(1),
+      });
+
+      localStorage.setItem('voted', 'true');
+      router.push('/result');
+    } catch (error) {
+      console.error('투표 중 오류가 발생했습니다:', error);
+      alert('투표 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setIsSubmitting(false);
     }
   };
- 
-  if (isSubmitted) {
-    localStorage.setItem('voted', 'true');
+
+  if (isSubmitting) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="bg-white p-6 md:p-10 rounded-lg shadow-md text-center w-full max-w-md">
-          <h1 className="text-2xl md:text-4xl font-bold mb-4">설문이 완료되었습니다!</h1>
-          <p className="text-lg md:text-xl mb-4">
-            선택한 학교: <strong>{schoolsList[schools.indexOf(selectedSchool)]}</strong>
-          </p>
-          <p className="text-lg md:text-xl mb-4">
-            선택 이유: <strong>{reasonsList[reasons.indexOf(selectedReason)].label}</strong>
-          </p>
-          <p className="text-gray-500">잠시 후 결과 페이지로 이동합니다...</p>
+          <h1 className="text-2xl md:text-4xl font-bold mb-4">설문이 진행 중입니다...</h1>
+          <p className="text-gray-500">잠시만 기다려주세요.</p>
         </div>
       </div>
     );
@@ -83,18 +77,27 @@ export default function Home() {
             <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-4">1. 고등학교 선택</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {schoolsList.map((school, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setSelectedSchool(schools[index])}
-                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 h-auto min-h-[60px] flex items-center justify-center text-center ${
-                    selectedSchool === schools[index]
-                      ? 'bg-blue-500 text-white border-2 border-blue-500'
-                      : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
-                  }`}
-                >
-                  {school}
-                </button>
+                <React.Fragment key={index}>
+                  <input
+                    type="radio"
+                    id={`school-${index}`}
+                    name="school"
+                    value={schools[index]}
+                    className="hidden"
+                    checked={selectedSchool === schools[index]}
+                    onChange={() => setSelectedSchool(schools[index])}
+                  />
+                  <label
+                    htmlFor={`school-${index}`}
+                    className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 h-auto min-h-[60px] flex items-center justify-center text-center cursor-pointer ${
+                      selectedSchool === schools[index]
+                        ? 'bg-blue-500 text-white border-2 border-blue-500'
+                        : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    {school}
+                  </label>
+                </React.Fragment>
               ))}
             </div>
           </div>
@@ -102,19 +105,28 @@ export default function Home() {
           <div className="mb-8 md:mb-12">
             <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-4">2. 선택 이유는 뭔가요?</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {reasonsList.map((reason, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => setSelectedReason(reasons[index])}
-                  className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-transform duration-200 hover:scale-105 h-auto min-h-[60px] flex items-center justify-center text-center ${
-                    selectedReason === reasons[index]
-                      ? 'bg-green-500 text-white border-2 border-green-500'
-                      : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
-                  }`}
-                >
-                  {reason.label}
-                </button>
+              {reasonsList.filter(reason => reason.id !== 'all').map((reason, index) => (
+                <React.Fragment key={index}>
+                  <input
+                    type="radio"
+                    id={`reason-${index}`}
+                    name="reason"
+                    value={reason.id}
+                    className="hidden"
+                    checked={selectedReason === reason.id}
+                    onChange={() => setSelectedReason(reason.id)}
+                  />
+                  <label
+                    htmlFor={`reason-${index}`}
+                    className={`px-4 py-3 text-sm md:text-base rounded-lg font-semibold shadow transition-all duration-200 hover:scale-105 h-auto min-h-[60px] flex items-center justify-center text-center cursor-pointer ${
+                      selectedReason === reason.id
+                        ? 'bg-green-500 text-white border-2 border-green-500'
+                        : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    {reason.label}
+                  </label>
+                </React.Fragment>
               ))}
             </div>
           </div>
@@ -122,7 +134,7 @@ export default function Home() {
           <div className="text-center">
             <button
               type="submit"
-              className="w-full bg-gray-800 text-white py-3 md:py-4 rounded-lg text-lg md:text-xl font-bold shadow-lg hover:bg-gray-900 transition-transform duration-200 hover:scale-105"
+              className="w-full bg-gray-800 text-white py-3 md:py-4 rounded-lg text-lg md:text-xl font-bold shadow-lg hover:bg-gray-900 transition-all duration-200 hover:scale-105"
             >
               완료
             </button>
