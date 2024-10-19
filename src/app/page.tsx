@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import "./globals.css";
 
-import { SchoolCode, ReasonCode, schoolsList, schools, reasons, reasonsList } from './data/schoolData';
+import { SchoolCode, ReasonCode, schoolsList, schools, reasonsList } from './data/schoolData';
 
 export default function Home() {
   const [selectedSchool, setSelectedSchool] = useState<SchoolCode | ''>('');
