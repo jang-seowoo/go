@@ -1,3 +1,5 @@
+//data/schoolData.ts
+
 export type SchoolName = string;
 export type SchoolCode = string;
 export type ReasonCode = string;

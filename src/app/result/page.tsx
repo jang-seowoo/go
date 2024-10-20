@@ -1,14 +1,17 @@
+//result/page.tsx
+
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase/firestore';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import Image from 'next/image';
 import '../globals.css';
-import { Info } from 'lucide-react';
+import { Info, RefreshCw} from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import {
   SchoolCode, ReasonCode,
@@ -39,6 +42,45 @@ export default function ResultPage() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [distances, setDistances] = useState<Record<SchoolCode, number>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [userVote, setUserVote] = useState<{ school: SchoolCode | null, reason: ReasonCode | null }>({ school: null, reason: null });
+  const router = useRouter();
+
+  useEffect(() => {
+    const voted = localStorage.getItem('voted');
+    const selectedSchool = localStorage.getItem('selectedSchool') as SchoolCode;
+    const selectedReason = localStorage.getItem('selectedReason') as ReasonCode;
+    
+    if (voted && selectedSchool && selectedReason) {
+      setUserVote({ school: selectedSchool, reason: selectedReason });
+    }
+  }, []);
+
+  const handleResetVote = async () => {
+    if (!userVote.school || !userVote.reason) return;
+
+    try {
+      const allDocRef = doc(db, "data", "all");
+      await updateDoc(allDocRef, {
+        [userVote.school]: increment(-1),
+      });
+
+      const reasonDocRef = doc(db, "data", userVote.reason);
+      await updateDoc(reasonDocRef, {
+        [userVote.school]: increment(-1),
+      });
+
+      localStorage.removeItem('voted');
+      localStorage.removeItem('selectedSchool');
+      localStorage.removeItem('selectedReason');
+
+      router.push('/');
+    } catch (error) {
+      console.error('투표 재설정 중 오류가 발생했습니다:', error);
+      alert('투표 재설정 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
+
+
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -168,130 +210,128 @@ export default function ResultPage() {
   };
   
 
-  const handleCloseModal = () => setSelectedSchool(null);
+
 
   if (isLoading) {
     return <div className="text-center mt-10">로딩 중...</div>;
   }
   
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="bg-white shadow-md rounded-xl p-4 md:p-8 w-full max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-700 mb-6">광명시 희망 고등학교</h1>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-4">광명시 희망 고등학교</h1>
 
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-1/4">
-            <div className="grid grid-cols-2 gap-2 md:flex md:flex-col">
-              {[...reasonsList, { id: 'distance' as ReasonCode, label: '현재 거리순' }].map((reason, index) => (
-                <button
-                  key={reason.id}
-                  onClick={() => setSelectedReason(reason.id)}
-                  className={`px-3 py-2 text-sm rounded-lg font-semibold shadow transition-all duration-200 hover:scale-102 ${
-                    selectedReason === reason.id
-                      ? 'bg-green-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  } ${index === reasonsList.length ? 'col-span-2 md:col-span-1' : ''}`}
-                >
-                  {reason.label}
-                </button>
-              ))}
-            </div>
+        <div className="bg-white shadow-sm rounded-lg p-4 mb-4 flex flex-wrap items-center justify-between">
+          {userVote.school && userVote.reason ? (
+            <>
+              <div className="flex-grow mr-4">
+                <span className="font-semibold">내 선택:</span>
+                <span className="ml-2">{schoolsList[schools.indexOf(userVote.school)]}</span>
+                <span className="mx-2">|</span>
+                <span>{reasonsList.find(r => r.id === userVote.reason)?.label}</span>
+              </div>
+              <button
+                onClick={handleResetVote}
+                className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm flex items-center hover:bg-gray-300 transition-colors"
+              >
+                <RefreshCw size={14} className="mr-1" />
+                재설정
+              </button>
+            </>
+          ) : (
+            <p className="text-gray-500">아직 선택하지 않았습니다.</p>
+          )}
+        </div>
+
+        <div className="bg-white shadow-sm rounded-lg p-4">
+          <div className="flex flex-wrap gap-2 mb-4">
+            {[...reasonsList, { id: 'distance' as ReasonCode, label: '현재 거리순' }].map((reason) => (
+              <button
+                key={reason.id}
+                onClick={() => setSelectedReason(reason.id)}
+                className={`px-3 py-1 text-sm rounded-full font-medium transition-colors ${
+                  selectedReason === reason.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {reason.label}
+              </button>
+            ))}
           </div>
 
-          <div className="md:w-3/4">
-            {selectedReason !== 'distance' && (
-              <div className="mt-8 mb-8" style={{ height: '500px' }}>
-                <Bar data={chartData} options={chartOptions} />
-              </div>
-            )}
-
-            <div className="overflow-x-auto mb-8">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {selectedReason === 'distance' ? '거리 (km)' : '선호도'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {sortedSchools.map((school) => (
-                    <tr key={school}>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            {schoolsList[schools.indexOf(school)]}
-                            {selectedReason !== 'distance' && (
-                              <span className="ml-2 text-xs text-blue-500">
-                                거리: {distances[school] ? distances[school].toFixed(2) : '계산 중...'}km
-                                <span className="relative group inline-block">
-                                  <span className="cursor-help ml-1 text-gray-400">&#9432;</span>
-                                  <span className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded p-2 -mt-2 ml-2">
-                                    정확하지 않을 수 있습니다
-                                  </span>
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                          <Info
-                            className="text-blue-600 cursor-pointer hover:text-blue-800 transition-colors duration-200"
-                            size={20}
-                            onClick={() => setSelectedSchool(school)}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        {selectedReason === 'distance' 
-                          ? distances[school] ? distances[school].toFixed(2) : '계산 중...'
-                          : schoolData[school] || 0}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {selectedReason !== 'distance' && (
+            <div className="mb-6" style={{ height: '300px' }}>
+              <Bar data={chartData} options={chartOptions} />
             </div>
+          )}
 
-            <p className="text-sm text-gray-500 mt-4 text-center">
-              {selectedReason === 'distance' 
-                ? '이 결과는 현재 위치에서 각 학교까지의 대략적인 거리를 나타냅니다.' 
-                : '이 결과는 선택된 이유에 따라 집계된 학교 선호도를 나타냅니다.'}
-              더 많은 정보는 학교 이름 옆의 정보 아이콘을 클릭하세요.
-            </p>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {selectedReason === 'distance' ? '거리 (km)' : '선호도'}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {sortedSchools.map((school) => (
+                  <tr key={school} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <span className="font-medium">{schoolsList[schools.indexOf(school)]}</span>
+                          {selectedReason !== 'distance' && (
+                            <span className="ml-2 text-xs text-blue-500">
+                              {distances[school] ? `${distances[school].toFixed(2)}km` : '계산 중...'}
+                            </span>
+                          )}
+                        </div>
+                        <Info
+                          className="text-blue-500 cursor-pointer hover:text-blue-700 transition-colors"
+                          size={18}
+                          onClick={() => setSelectedSchool(school)}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {selectedReason === 'distance' 
+                        ? distances[school] ? distances[school].toFixed(2) : '계산 중...'
+                        : schoolData[school] || 0}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
       {selectedSchool && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 w-11/12 md:w-2/3 lg:w-1/2 shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold mb-3">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
             <Image
               src={`/image/${selectedSchool}.png`}
               alt={`${schoolsList[schools.indexOf(selectedSchool)]} 사진`}
               width={600}
-              height={500}
-              className="w-full h-48 object-cover mb-4 rounded"
+              height={400}
+              className="w-full h-40 object-cover mb-3 rounded"
             />
-      
-            <p className="text-sm mb-4">{schoolDescriptions[selectedSchool]}</p>
-      
-            <h3 className="text-xs text-blue-800 mb-3">
-              정보는 모두 나무위키에서 가져왔으며, 수정할 부분이나 학교 관계자 중 불편한 내용이 있을 시 인스타그램 @wxstw_ 으로 문의주세요.
-            </h3>
-      
-            <div className="mb-4 text-xs">
-              <Link href={namuLink[selectedSchool]} passHref className="text-blue-500 text-sm hover:underline transition duration-200">
-                더보기 (나무위키 이동)
+            <p className="text-sm mb-3">{schoolDescriptions[selectedSchool]}</p>
+            <div className="flex justify-between items-center">
+              <Link href={namuLink[selectedSchool]} passHref className="text-blue-500 text-sm hover:underline">
+                더보기 (나무위키)
               </Link>
+              <button
+                onClick={() => setSelectedSchool(null)}
+                className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
+              >
+                닫기
+              </button>
             </div>
-
-            <button
-              onClick={handleCloseModal}
-              className="mt-2 bg-red-500 text-white px-4 py-2 rounded transition duration-200 hover:bg-red-600"
-            >
-              닫기
-            </button>
           </div>
         </div>
       )}

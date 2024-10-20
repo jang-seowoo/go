@@ -1,3 +1,5 @@
+//page.tsx
+
 'use client'
 
 import { doc, updateDoc, increment } from 'firebase/firestore';
@@ -15,12 +17,12 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (localStorage.getItem('voted')) {
-      console.log('이미 투표');
-      //router.push('/result');
+    const voted = localStorage.getItem('voted');
+    if (voted) {
+      router.push('/result');
     }
   }, [router]);
-
+  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -43,6 +45,8 @@ export default function Home() {
       });
 
       localStorage.setItem('voted', 'true');
+      localStorage.setItem('selectedSchool', selectedSchool);
+      localStorage.setItem('selectedReason', selectedReason);
       router.push('/result');
     } catch (error) {
       console.error('투표 중 오류가 발생했습니다:', error);
