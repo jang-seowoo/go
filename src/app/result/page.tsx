@@ -1,5 +1,3 @@
-//result/page.tsx
-
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -10,50 +8,235 @@ import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import Image from 'next/image';
 import '../globals.css';
-import { Info, RefreshCw} from 'lucide-react';
+import { Info, RefreshCw, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { KakaoMapLoader } from './KakaoMapLoader';
+import { KakaoMap, KakaoMapOptions } from './kakaoMapsTypes';
 
 import {
-  SchoolCode, ReasonCode,
-  schoolsList, schools, reasonsList,
-  schoolDescriptions, namuLink, Location, schoolLocations
+  SchoolCode,
+  ReasonCode,
+  schoolsList,
+  schools,
+  reasonsList,
+  schoolDescriptions,
+  namuLink,
+  Location,
+  schoolLocations
 } from '../data/schoolData';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 type SchoolData = Record<SchoolCode, number>;
 
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+interface SchoolDistance {
+  schoolCode: SchoolCode;
+  distance: number;
+  duration: number;
+  route: string;
 }
+
+
 
 export default function ResultPage() {
   const [selectedReason, setSelectedReason] = useState<ReasonCode | 'all' | 'distance'>('all');
   const [schoolData, setSchoolData] = useState<SchoolData>({});
   const [selectedSchool, setSelectedSchool] = useState<SchoolCode | null>(null);
   const [userLocation, setUserLocation] = useState<Location | null>(null);
-  const [distances, setDistances] = useState<Record<SchoolCode, number>>({});
+  const [schoolDistances, setSchoolDistances] = useState<SchoolDistance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userVote, setUserVote] = useState<{ school: SchoolCode | null, reason: ReasonCode | null }>({ school: null, reason: null });
+  const [kakaoLoaded, setKakaoLoaded] = useState(false);
+  const [isLocationReady, setIsLocationReady] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const voted = localStorage.getItem('voted');
-    const selectedSchool = localStorage.getItem('selectedSchool') as SchoolCode;
-    const selectedReason = localStorage.getItem('selectedReason') as ReasonCode;
-    
-    if (voted && selectedSchool && selectedReason) {
-      setUserVote({ school: selectedSchool, reason: selectedReason });
+    const savedVote = localStorage.getItem('voted');
+    const savedSchool = localStorage.getItem('selectedSchool') as SchoolCode;
+    const savedReason = localStorage.getItem('selectedReason') as ReasonCode;
+    if (savedVote && savedSchool && savedReason) {
+      setUserVote({ school: savedSchool, reason: savedReason });
     }
   }, []);
+
+  const calculateDistances = useCallback(async () => {
+    if (!userLocation) {
+      console.log('User location not available');
+      return;
+    }
+
+    try {
+      const queryParams = new URLSearchParams({
+        origin: JSON.stringify(userLocation),
+        destinations: JSON.stringify(
+          Object.entries(schoolLocations).map(([schoolCode, location]) => ({
+            schoolCode,
+            location,
+          }))
+        ),
+      });
+
+      const response = await fetch(`/api/directions?${queryParams.toString()}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch distances');
+      }
+
+      const distances = await response.json();
+      setSchoolDistances(distances);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error calculating distances:', error);
+      setIsLoading(false);
+    }
+  }, [userLocation]);
+
+  // 카카오맵 API 초기화
+  useEffect(() => {
+    const initializeKakaoMaps = async () => {
+      try {
+        const apiKey = process.env.NEXT_PUBLIC_KAKAOMAP_API;
+        if (!apiKey) {
+          throw new Error('KAKAOMAP_API key is not defined');
+        }
+        
+        await KakaoMapLoader.getInstance().load(apiKey);
+        setKakaoLoaded(true);
+      } catch (error) {
+        console.error('Failed to initialize Kakao Maps:', error);
+      }
+    };
+
+    initializeKakaoMaps();
+    getUserLocation();
+  }, []);
+
+  
+  // 위치 정보 가져오기
+  const getUserLocation = (): Promise<Location> => {
+    return new Promise<Location>((resolve) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            resolve(location);
+          },
+          (error) => {
+            console.error("Error getting user location:", error);
+            // 기본 위치 설정 (광명시청)
+            resolve({
+              lat: 37.479,
+              lng: 126.864
+            });
+          }
+        );
+      } else {
+        console.error("Geolocation is not supported");
+        resolve({
+          lat: 37.479,
+          lng: 126.864
+        });
+      }
+    });
+  };
+
+  useEffect(() => {
+    const initializeLocationAndMap = async () => {
+      const location = await getUserLocation();
+      setUserLocation(location);
+      setIsLocationReady(true);
+    };
+  
+    initializeLocationAndMap();
+  }, []); 
+
+  // 거리 계산 트리거
+  useEffect(() => {
+    if (kakaoLoaded && isLocationReady && userLocation) {
+      calculateDistances();
+    }
+  }, [kakaoLoaded, isLocationReady, userLocation, calculateDistances]);
+
+  
+
+  // 지도 초기화 함수
+  const initializeMap = useCallback((school: SchoolCode) => {
+    if (!kakaoLoaded || !userLocation) return;
+  
+    const schoolLocation = schoolLocations[school];
+    const container = document.getElementById('kakaoMap');
+    
+    if (!container) return;
+  
+    const options: KakaoMapOptions = {
+      center: new window.kakao.maps.LatLng(
+        (userLocation.lat + schoolLocation.lat) / 2,
+        (userLocation.lng + schoolLocation.lng) / 2
+      ),
+      level: 7
+    };
+  
+    const map: KakaoMap = new window.kakao.maps.Map(container, options);
+  
+    // 출발지 마커
+    new window.kakao.maps.Marker({
+      map: map,
+      position: new window.kakao.maps.LatLng(userLocation.lat, userLocation.lng),
+      title: '현재 위치',
+      image: new window.kakao.maps.MarkerImage(
+        '/image/start-marker.png',
+        new window.kakao.maps.Size(35, 35),
+        { offset: new window.kakao.maps.Point(17, 35) }
+      )
+    });
+  
+    // 도착지 마커
+    new window.kakao.maps.Marker({
+      map: map,
+      position: new window.kakao.maps.LatLng(schoolLocation.lat, schoolLocation.lng),
+      title: schoolsList[schools.indexOf(school)],
+      image: new window.kakao.maps.MarkerImage(
+        '/image/school-marker.png',
+        new window.kakao.maps.Size(35, 35),
+        { offset: new window.kakao.maps.Point(17, 35) }
+      )
+    });
+  
+    // 경로 그리기
+    KakaoMapLoader.getInstance().drawRoute(map, userLocation, schoolLocation);
+  }, [kakaoLoaded, userLocation]);
+
+  const fetchData = useCallback(async (): Promise<void> => {
+    try {
+      if (selectedReason !== 'distance') {
+        const docRef = doc(db, 'data', selectedReason);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setSchoolData(docSnap.data() as SchoolData);
+        }
+      }
+    } catch (error) {
+      console.error('데이터를 가져오는 중 오류가 발생했습니다:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedReason]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // 모달 열릴 때 지도 초기화
+  useEffect(() => {
+    if (selectedSchool) {
+      initializeMap(selectedSchool);
+    }
+  }, [selectedSchool, initializeMap]);
 
   const handleResetVote = async () => {
     if (!userVote.school || !userVote.reason) return;
@@ -80,66 +263,11 @@ export default function ResultPage() {
     }
   };
 
-
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error("사용자 위치 불러오기 에러:", error);
-        }
-      );
-    } else {
-      console.error("이 브라우저에서 Geolocation이 지원되지 않습니다.");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (userLocation) {
-      const newDistances: Record<SchoolCode, number> = {};
-      Object.entries(schoolLocations).forEach(([school, location]) => {
-        newDistances[school as SchoolCode] = calculateDistance(
-          userLocation.lat,
-          userLocation.lng,
-          location.lat,
-          location.lng
-        );
-      });
-      setDistances(newDistances);
-    }
-  }, [userLocation]);
-
-  const fetchData = useCallback(async (): Promise<void> => {
-    try {
-      if (selectedReason !== 'distance') {
-        const docRef = doc(db, 'data', selectedReason);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setSchoolData(docSnap.data() as SchoolData);
-        } else {
-          console.log('해당 데이터가 없습니다.');
-        }
-      }
-    } catch (error) {
-      console.error('데이터를 가져오는 중 오류가 발생했습니다:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedReason]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   const sortedSchools = [...schools].sort((a, b) => {
     if (selectedReason === 'distance') {
-      return (distances[a] || 0) - (distances[b] || 0);
+      const distanceA = schoolDistances.find(sd => sd.schoolCode === a)?.distance || Infinity;
+      const distanceB = schoolDistances.find(sd => sd.schoolCode === b)?.distance || Infinity;
+      return distanceA - distanceB;
     }
     return (schoolData[b] || 0) - (schoolData[a] || 0);
   });
@@ -174,7 +302,7 @@ export default function ResultPage() {
         text: '학교별 선호도',
         font: {
           size: 18,
-          weight: 'bold' as 'bold' | 'normal' | 'bolder' | 'lighter' | number,
+          weight: 'bold' as const,
         },
       },
     },
@@ -184,43 +312,21 @@ export default function ResultPage() {
         title: {
           display: true,
           text: '선호도',
-          font: {
-            size: 14,
-            weight: 'bold' as 'bold' | 'normal' | 'bolder' | 'lighter' | number,
-          },
-        },
-      },
-      y: {
-        title: {
-          display: true,
-          text: '학교',
-          font: {
-            size: 14,
-            weight: 'bold' as 'bold' | 'normal' | 'bolder' | 'lighter' | number,
-          },
-        },
-        ticks: {
-          font: {
-            size: 12,
-            weight: 'bold' as 'bold' | 'normal' | 'bolder' | 'lighter' | number,
-          },
         },
       },
     },
   };
-  
-
-
 
   if (isLoading) {
     return <div className="text-center mt-10">로딩 중...</div>;
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-4">광명시 희망 고등학교</h1>
 
+        {/* User Vote Information */}
         <div className="bg-white shadow-sm rounded-lg p-4 mb-4 flex flex-wrap items-center justify-between">
           {userVote.school && userVote.reason ? (
             <>
@@ -243,7 +349,9 @@ export default function ResultPage() {
           )}
         </div>
 
+        {/* Main Content */}
         <div className="bg-white shadow-sm rounded-lg p-4">
+          {/* Reason Selection Buttons */}
           <div className="flex flex-wrap gap-2 mb-4">
             {[...reasonsList, { id: 'distance' as ReasonCode, label: '현재 거리순' }].map((reason) => (
               <button
@@ -260,81 +368,122 @@ export default function ResultPage() {
             ))}
           </div>
 
+          {/* Chart */}
           {selectedReason !== 'distance' && (
             <div className="mb-6" style={{ height: '300px' }}>
               <Bar data={chartData} options={chartOptions} />
             </div>
           )}
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {selectedReason === 'distance' ? '거리 (km)' : '선호도'}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {sortedSchools.map((school) => (
-                  <tr key={school} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <span className="font-medium">{schoolsList[schools.indexOf(school)]}</span>
-                          {selectedReason !== 'distance' && (
-                            <span className="ml-2 text-xs text-blue-500">
-                              {distances[school] ? `${distances[school].toFixed(2)}km` : '계산 중...'}
-                            </span>
-                          )}
-                        </div>
-                        <Info
-                          className="text-blue-500 cursor-pointer hover:text-blue-700 transition-colors"
-                          size={18}
-                          onClick={() => setSelectedSchool(school)}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      {selectedReason === 'distance' 
-                        ? distances[school] ? distances[school].toFixed(2) : '계산 중...'
-                        : schoolData[school] || 0}
-                    </td>
+          {/* School List */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">학교</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {selectedReason === 'distance' ? '거리 (km)' : '선호도'}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {selectedSchool && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-xl font-bold mb-3">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
-            <Image
-              src={`/image/${selectedSchool}.png`}
-              alt={`${schoolsList[schools.indexOf(selectedSchool)]} 사진`}
-              width={600}
-              height={400}
-              className="w-full h-40 object-cover mb-3 rounded"
-            />
-            <p className="text-sm mb-3">{schoolDescriptions[selectedSchool]}</p>
-            <div className="flex justify-between items-center">
-              <Link href={namuLink[selectedSchool]} passHref className="text-blue-500 text-sm hover:underline">
-                더보기 (나무위키)
-              </Link>
-              <button
-                onClick={() => setSelectedSchool(null)}
-                className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
-              >
-                닫기
-              </button>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {sortedSchools.map((school) => (
+                    <tr key={school} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">{schoolsList[schools.indexOf(school)]}</span>
+                            {selectedReason !== 'distance' && (
+                              <span className="text-xs text-blue-500">
+                                {schoolDistances.find(sd => sd.schoolCode === school)?.distance
+                                  ? `${(schoolDistances.find(sd => sd.schoolCode === school)!.distance / 1000).toFixed(2)}km`
+                                  : '거리 정보 없음'}
+                              </span>
+                            )}
+                          </div>
+                          <button 
+                            onClick={() => setSelectedSchool(school)}
+                            className="text-blue-500 hover:text-blue-700 transition-colors focus:outline-none"
+                          >
+                            <Info size={18} />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {selectedReason === 'distance' 
+                          ? schoolDistances.find(sd => sd.schoolCode === school)?.distance
+                            ? `${(schoolDistances.find(sd => sd.schoolCode === school)!.distance / 1000).toFixed(2)}`
+                            : '거리 정보 없음'
+                          : schoolData[school] || 0}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      )}
+                {/* School Detail Modal */}
+                {selectedSchool && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column - School Info */}
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
+                  <Image
+                    src={`/image/${selectedSchool}.png`}
+                    alt={`${schoolsList[schools.indexOf(selectedSchool)]} 사진`}
+                    width={600}
+                    height={400}
+                    className="w-full h-48 object-cover mb-4 rounded-lg shadow-md"
+                  />
+                  <div className="space-y-3">
+                    <p className="text-gray-700">{schoolDescriptions[selectedSchool]}</p>
+                    {schoolDistances.find(sd => sd.schoolCode === selectedSchool) && (
+                      <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <div className="flex items-center text-gray-700">
+                          <MapPin size={16} className="mr-2" />
+                          <span>거리: {(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.distance / 1000).toFixed(2)}km</span>
+                        </div>
+                        <p className="text-gray-700">소요 시간: {Math.floor(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.duration / 60)}분</p>
+                        <p className="text-gray-700">경로: {schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.route}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column - Map */}
+                <div className="h-full">
+                  <div 
+                    id="kakaoMap" 
+                    className="w-full h-[400px] rounded-lg shadow-md"
+                  ></div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+                <Link 
+                  href={namuLink[selectedSchool]} 
+                  target="_blank"
+                  className="text-blue-500 hover:text-blue-700 flex items-center transition-colors"
+                >
+                  <Info size={16} className="mr-1" />
+                  더보기 (나무위키)
+                </Link>
+                <button
+                  onClick={() => setSelectedSchool(null)}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

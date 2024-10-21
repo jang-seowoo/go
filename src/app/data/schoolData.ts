@@ -49,7 +49,7 @@ export const schoolsList: SchoolName[] = [
     hanggong: "경기도 광명시 광명7동에 위치한 사립 특성화 고등학교로 2017년 산학일체형 도제학교로 지정되었다. 2020년부터 교명이 경기항공고등학교로 변경되었다. 학과: 항공전기전자과, 항공영상미디어과, 로봇자동화과, 인테리어리모델링과",
     chang: "경기도 광명시 소하2동에 위치한 공립 특성화고등학교이다. 스마트회계, 스마트it, 인플루언서 마케팅, 스포츠 경영, 관광경영, 콘텐츠디자인 과로 나뉜다"
   };
-  
+                       
   export const namuLink: Record<SchoolCode, string> = {
     gwangmyeong: "https://namu.wiki/w/%EA%B4%91%EB%AA%85%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90(%EA%B2%BD%EA%B8%B0)",
     gwangmyeongbuk: "https://namu.wiki/w/%EA%B4%91%EB%AA%85%EB%B6%81%EA%B3%A0%EB%93%B1%ED%95%99%EA%B5%90",
