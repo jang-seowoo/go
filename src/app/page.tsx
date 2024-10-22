@@ -1,5 +1,5 @@
 //page.tsx
-
+ 
 'use client'
 
 import { doc, updateDoc, increment } from 'firebase/firestore';
