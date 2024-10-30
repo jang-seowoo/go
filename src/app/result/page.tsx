@@ -1,3 +1,5 @@
+//result/page.tsx
+
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -326,7 +328,7 @@ export default function ResultPage() {
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold text-center text-gray-700 mb-4">광명시 희망 고등학교</h1>
 
-        {/* User Vote Information */}
+        {/*사용자 선택 */}
         <div className="bg-white shadow-sm rounded-lg p-4 mb-4 flex flex-wrap items-center justify-between">
           {userVote.school && userVote.reason ? (
             <>
@@ -349,9 +351,9 @@ export default function ResultPage() {
           )}
         </div>
 
-        {/* Main Content */}
+        {/* 메인 */}
         <div className="bg-white shadow-sm rounded-lg p-4">
-          {/* Reason Selection Buttons */}
+          {/* 이유 선택 버튼 */}
           <div className="flex flex-wrap gap-2 mb-4">
             {[...reasonsList, { id: 'distance' as ReasonCode, label: '현재 거리순' }].map((reason) => (
               <button
@@ -368,14 +370,14 @@ export default function ResultPage() {
             ))}
           </div>
 
-          {/* Chart */}
+          {/* 차트 */}
           {selectedReason !== 'distance' && (
             <div className="mb-6" style={{ height: '300px' }}>
               <Bar data={chartData} options={chartOptions} />
             </div>
           )}
 
-          {/* School List */}
+          {/* 학교 리스트 */}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -424,12 +426,12 @@ export default function ResultPage() {
             </div>
           </div>
         </div>
-                {/* School Detail Modal */}
+                {/* 학교 설명 모달 */}
                 {selectedSchool && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
             <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-xl">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - School Info */}
+                {/* Left Column - 학교설명 */}
                 <div>
                   <h2 className="text-2xl font-bold mb-4">{schoolsList[schools.indexOf(selectedSchool)]}</h2>
                   <Image
@@ -448,13 +450,13 @@ export default function ResultPage() {
                           <span>거리: {(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.distance / 1000).toFixed(2)}km</span>
                         </div>
                         <p className="text-gray-700">소요 시간: {Math.floor(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.duration / 60)}분</p>
-                        <p className="text-gray-700">경로: {schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.route}</p>
+                        
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Right Column - Map */}
+                {/* Right Column - 지도 */}
                 <div className="h-full">
                   <div 
                     id="kakaoMap" 
@@ -463,7 +465,7 @@ export default function ResultPage() {
                 </div>
               </div>
 
-              {/* Footer */}
+              {/* 하단 */}
               <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
                 <Link 
                   href={namuLink[selectedSchool]} 

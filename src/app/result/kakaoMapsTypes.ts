@@ -5,7 +5,7 @@ export interface KakaoLatLng {
 
 export interface KakaoMap {
   setCenter(latlng: KakaoLatLng): void;
-  // 필요한 다른 메서드들 추가
+  
 }
 
 export interface KakaoMarker {
@@ -34,7 +34,7 @@ export interface KakaoServices {
       ) => void
     ): void;
   };
-  // 필요한 다른 서비스들 추가
+  
 }
 
 export interface KakaoMaps {
