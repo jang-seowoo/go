@@ -242,26 +242,30 @@ export default function ResultPage() {
 
   const handleResetVote = async () => {
     if (!userVote.school || !userVote.reason) return;
-
+  
     try {
+      setIsLoading(true);
+  
       const allDocRef = doc(db, "data", "all");
       await updateDoc(allDocRef, {
         [userVote.school]: increment(-1),
       });
-
+  
       const reasonDocRef = doc(db, "data", userVote.reason);
       await updateDoc(reasonDocRef, {
         [userVote.school]: increment(-1),
       });
-
+  
       localStorage.removeItem('voted');
       localStorage.removeItem('selectedSchool');
       localStorage.removeItem('selectedReason');
-
+  
       router.push('/');
     } catch (error) {
       console.error('투표 재설정 중 오류가 발생했습니다:', error);
       alert('투표 재설정 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
