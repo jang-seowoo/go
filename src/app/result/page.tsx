@@ -38,7 +38,7 @@ interface SchoolDistance {
   route: string;
 }
 
-
+   
 
 export default function ResultPage() {
   const [selectedReason, setSelectedReason] = useState<ReasonCode | 'all' | 'distance'>('all');
@@ -75,7 +75,7 @@ export default function ResultPage() {
             schoolCode,
             location,
           }))
-        ),
+        ), 
       });
 
       const response = await fetch(`/api/directions?${queryParams.toString()}`, {
@@ -116,36 +116,32 @@ export default function ResultPage() {
   }, []);
 
   
-  // 위치 정보 가져오기
-  const getUserLocation = (): Promise<Location> => {
-    return new Promise<Location>((resolve) => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            resolve(location);
-          },
-          (error) => {
-            console.error("Error getting user location:", error);
-            // 기본 위치 설정 (광명시청)
-            resolve({
-              lat: 37.479,
-              lng: 126.864
-            });
-          }
-        );
-      } else {
-        console.error("Geolocation is not supported");
-        resolve({
-          lat: 37.479,
-          lng: 126.864
-        });
-      }
-    });
-  };
+// 위치 정보 가져오기
+const getUserLocation = (): Promise<Location> => {
+  return new Promise<Location>((resolve, reject) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          resolve(location);
+        },
+        (error) => {
+          console.error("Error getting user location:", error);
+          alert("이 브라우저에서는 거리 기능을 이용할 수 없습니다.");
+          reject(error); 
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported");
+      alert("이 브라우저에서는 거리 기능을 이용할 수 없습니다.");
+      reject(new Error("Geolocation not supported")); 
+    }
+  });
+};
+
 
   useEffect(() => {
     const initializeLocationAndMap = async () => {
@@ -213,6 +209,7 @@ export default function ResultPage() {
     KakaoMapLoader.getInstance().drawRoute(map, userLocation, schoolLocation);
   }, [kakaoLoaded, userLocation]);
 
+  //firebase 불러오기
   const fetchData = useCallback(async (): Promise<void> => {
     try {
       if (selectedReason !== 'distance') {
