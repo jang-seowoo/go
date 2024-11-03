@@ -449,7 +449,7 @@ const getUserLocation = (): Promise<Location> => {
                           <MapPin size={16} className="mr-2" />
                           <span>거리: {(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.distance / 1000).toFixed(2)}km</span>
                         </div>
-                        <p className="text-gray-700">소요 시간: {Math.floor(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.duration / 60)}분</p>
+                        <p className="text-gray-700">예상 소요 시간: {Math.floor(schoolDistances.find(sd => sd.schoolCode === selectedSchool)!.duration / 60)}분</p>
                         
                       </div>
                     )}
