@@ -77,7 +77,7 @@ export default function ResultPage() {
           }))
         ), 
       });
-
+            
       const response = await fetch(`/api/directions?${queryParams.toString()}`, {
         method: 'GET',
       });
@@ -278,7 +278,6 @@ const getUserLocation = (): Promise<Location> => {
   const abbreviateSchoolName = (name: string) => {
     return name.replace(/고등학교$/, '고');
   };
-
   const chartData = {
     labels: sortedSchools.map((school) => abbreviateSchoolName(schoolsList[schools.indexOf(school)])),
     datasets: [

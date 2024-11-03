@@ -71,7 +71,7 @@ export default function Home() {
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center flex-grow w-full max-w-4xl mx-auto">
         <div className="bg-white shadow-md rounded-2xl p-6 md:p-10 w-full">
           <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-700 mb-4">
-            광명시 희망 고등학교
+            희망 고등학교 선택
           </h1>
           <p className="text-center text-gray-500 text-sm mb-8">
             특정 고등학교를 무시하거나 서열을 가리기 위한 목적이 아니며 사용자에게서 직접적으로 가져가는 데이터는 없고, 설문 조사 후 다른 사람들의 선택을 볼 수 있습니다. 
